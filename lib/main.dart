@@ -14,9 +14,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'Startup Name Generator',
-      home: RandomWords(),
+      theme: ThemeData(
+          appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: Color.fromARGB(255, 75, 71, 69),
+      )),
+      home: const RandomWords(),
     );
   }
 }
@@ -30,13 +35,46 @@ class RandomWords extends StatefulWidget {
 
 class _RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
+  final _saved = <WordPair>{};
   final _biggerFont = const TextStyle(fontSize: 18.0);
+  void _pushSaved() {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (context) {
+      final tiles = _saved.map((pair) {
+        return ListTile(
+          title: Text(
+            pair.asPascalCase,
+            style: _biggerFont,
+          ),
+        );
+      });
+      final divided = tiles.isNotEmpty
+          ? ListTile.divideTiles(
+              context: context,
+              tiles: tiles,
+            ).toList()
+          : <Widget>[];
+
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Saved Suggestions'),
+        ),
+        body: ListView(children: divided),
+      );
+    }));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           title: const Text('Startup Name Generator'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.list),
+              onPressed: _pushSaved,
+              tooltip: 'Saved Suggestions',
+            )
+          ],
         ),
         body: ListView.builder(
           padding: const EdgeInsets.all(16.0),
@@ -47,11 +85,29 @@ class _RandomWordsState extends State<RandomWords> {
             if (index >= _suggestions.length) {
               _suggestions.addAll(generateWordPairs().take(10));
             }
+            final pair = _suggestions[index];
+
+            final alreadySaved = _saved.contains(pair);
+
             return ListTile(
                 title: Text(
-              _suggestions[index].asPascalCase,
-              style: _biggerFont,
-            ));
+                  pair.asPascalCase,
+                  style: _biggerFont,
+                ),
+                trailing: Icon(
+                  alreadySaved ? Icons.favorite : Icons.favorite_border,
+                  color: alreadySaved ? Colors.red : null,
+                  semanticLabel: alreadySaved ? 'Remove from saved' : 'Save',
+                ),
+                onTap: () {
+                  setState(() {
+                    if (alreadySaved) {
+                      _saved.remove(pair);
+                    } else {
+                      _saved.add(pair);
+                    }
+                  });
+                });
           },
         ));
   }
